@@ -36,7 +36,7 @@ area({rectangle, _, H, W}) ->
         H * W;
 
 area({triangle, {XA,YA}, {XB,YB}, {XC,YC}}) ->
-        ( (XB-XA)*(YC-YA) - (XC-XA)*(YB-YA) ) / 2.  % simple and efficient algorithm
+        abs( (XB-XA)*(YC-YA) - (XC-XA)*(YB-YA) ) / 2.  % simple and efficient algorithm
 
 
 % Calculate the perimeter of a shape.
@@ -121,7 +121,9 @@ int_div_2(N) -> int_div(N,2).
 test_shapes() ->
 	C = {circle, {2,2}, 2},
 	R = {rectangle, {-3,-3}, 4, 3},
-	T = {triangle, {2,2}, {-3,-3}, {3,0}},
+	T  = {triangle, {2,2}, {-3,-3}, {3,0}},
+	T2 = {triangle, {0,0}, {4,0}, {0,3}},
+	T3 = {triangle, {0,0}, {-4,0}, {0,3}},
 
         PI4 = 4 * math:pi(),
         Tp = 16.015339721864635,        % triangle perimeter
@@ -129,6 +131,9 @@ test_shapes() ->
         {PI4, PI4, {rectangle, {2,2}, 4, 4}} = {area(C), perimeter(C), enclose(C)},
         {12, 14, R} = {area(R), perimeter(R), enclose(R)},
         {7.5, Tp, {rectangle, {0.0, -0.5}, 6, 5}} = {area(T), perimeter(T), enclose(T)},
+
+        {6.0, 12.0, {rectangle, {2.0, 1.5}, 4, 3}} = {area(T2), perimeter(T2), enclose(T2)},
+        {6.0, 12.0, {rectangle, {-2.0, 1.5}, 4, 3}} = {area(T3), perimeter(T3), enclose(T3)},
 
         success.
 
