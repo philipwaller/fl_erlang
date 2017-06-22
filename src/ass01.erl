@@ -4,16 +4,20 @@
 %% The University of Kent
 %%
 %% Week 1, Assignment
+%% Philip Waller (philip.waller@gmail.com)
 %%
 
 -module(ass01).
 -export([
 	 perimeter/1,area/1,enclose/1,
-	 bits/1,bits_tail/1
+	 bits/1,bits_tail/1,
+         test_shapes/0, test_bits/0
 	]).
 
 %
 % 	. Shapes .
+%
+% Functions that are defined for the following shapes:
 %
 % circle - is defined by a center point, and radius.
 % 	{circle, {X,Y}, R}
@@ -32,7 +36,7 @@ area({rectangle, _, H, W}) ->
         H * W;
 
 area({triangle, {XA,YA}, {XB,YB}, {XC,YC}}) ->
-        ( (XB-XA)*(YC-YA) - (XC-XA)*(YB-YA) ) / 2.
+        ( (XB-XA)*(YC-YA) - (XC-XA)*(YB-YA) ) / 2.  % simple and efficient algorithm
 
 
 % Calculate the perimeter of a shape.
@@ -56,8 +60,8 @@ enclose({rectangle, P, W, H}) ->
 enclose({triangle, {XA,YA}, {XB,YB}, {XC,YC}}) ->
 	Xmin = min(XA, min(XB,XC)),
 	Ymin = min(YA, min(YB,YC)),
-	Xmax = max(XA, min(XB,XC)),
-	Ymax = max(YA, min(YB,YC)),
+	Xmax = max(XA, max(XB,XC)),
+	Ymax = max(YA, max(YB,YC)),
 	W = Xmax - Xmin,
 	H = Ymax - Ymin,
 	{rectangle, {Xmin + W/2, Ymin + H/2}, W, H}.
@@ -111,9 +115,38 @@ int_div_2(N) -> int_div(N,2).
 %
 % 	. Test Shapes .
 %
+% Testing not exhaustive; for example no edge cases tested for.
+%
 
 test_shapes() ->
 	C = {circle, {2,2}, 2},
 	R = {rectangle, {-3,-3}, 4, 3},
 	T = {triangle, {2,2}, {-3,-3}, {3,0}},
+
+        PI4 = 4 * math:pi(),
+        Tp = 16.015339721864635,        % triangle perimeter
+
+        {PI4, PI4, {rectangle, {2,2}, 4, 4}} = {area(C), perimeter(C), enclose(C)},
+        {12, 14, R} = {area(R), perimeter(R), enclose(R)},
+        {7.5, Tp, {rectangle, {0.0, -0.5}, 6, 5}} = {area(T), perimeter(T), enclose(T)},
+
+        success.
+
+%
+%       . Test Bit Sums .
+%
+
+test_bits() ->
+        {1,10,1,0} = {bits(1024), bits(1023), bits(1), bits(0)},
+        helper_test_bits(1024). 
+        
+% compare different methods
+helper_test_bits(0) -> success;
+helper_test_bits(N) ->
+        Bd = bits(N),
+        Bt = bits_tail(N),
+
+        Bd = Bt,
+
+        helper_test_bits(N-1).
 
