@@ -54,8 +54,8 @@ perimeter({triangle, PA, PB, PC}) ->
 enclose({circle, P, R}) ->
         {rectangle, P, 2*R, 2*R};
 
-enclose({rectangle, P, W, H}) ->
-        {rectangle, P, W, H};
+enclose(R = {rectangle, _, _, _}) -> 
+        R;
 
 enclose({triangle, {XA,YA}, {XB,YB}, {XC,YC}}) ->
 	Xmin = min(XA, min(XB,XC)),
