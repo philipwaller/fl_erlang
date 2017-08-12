@@ -14,8 +14,9 @@
 %% initialize the server.
 
 start() ->
-    register(frequency,
-	     spawn(frequency, init, [])).
+    io:format("Call: ~p(~p)~n", [?FUNCTION_NAME, none]),
+    register(?MODULE,
+	     spawn(?MODULE, init, [])).
 
 init() ->
   Frequencies = {get_frequencies(), []},
@@ -27,35 +28,49 @@ get_frequencies() -> [10,11,12,13,14,15].
 %% The Main Loop
 
 loop(Frequencies) ->
+  io:format("Call: ~p(~p)~n", [?FUNCTION_NAME, Frequencies]),
   receive
-    {request, Pid, allocate} ->
+    Message = {request, Pid, allocate} ->
+    %{request, Pid, allocate} ->
+      io:format("~p:Rx:~p~n", [Pid, Message]),
       {NewFrequencies, Reply} = allocate(Frequencies, Pid),
       Pid ! {reply, Reply},
       loop(NewFrequencies);
-    {request, Pid , {deallocate, Freq}} ->
+    Message = {request, Pid , {deallocate, Freq}} ->
+    %{request, Pid , {deallocate, Freq}} ->
+      io:format("~p:Rx:~p~n", [Pid, Message]),
       NewFrequencies = deallocate(Frequencies, Freq),
       Pid ! {reply, ok},
       loop(NewFrequencies);
-    {request, Pid, stop} ->
-      Pid ! {reply, stopped}
+    {request, Pid, stop} = Message ->
+    %{request, Pid, stop} ->
+      io:format("~p:Rx:~p~n", [Pid, Message]),
+      Pid ! {reply, stopped};
+    Message ->
+      io:format("~p:Rx:~p~n", ["<0.---.0>", Message]),
+      loop(Frequencies)
   end.
 
 %% Functional interface
 
 allocate() -> 
-    frequency ! {request, self(), allocate},
+    io:format("Call: ~p(~p)~n", [?FUNCTION_NAME, none]),
+    ?MODULE ! {request, self(), allocate},
     receive 
 	    {reply, Reply} -> Reply
     end.
 
 deallocate(Freq) -> 
-    frequency ! {request, self(), {deallocate, Freq}},
+    io:format("Call: ~p(~p)~n", [?FUNCTION_NAME, Freq]),
+    ?MODULE ! {request, self(), {deallocate, Freq}},
+    io:format("Call: ~p(~p)~n", ["deallocate", Freq]),
     receive 
 	    {reply, Reply} -> Reply
     end.
 
 stop() -> 
-    frequency ! {request, self(), stop},
+    io:format("Call: ~p(~p)~n", [?FUNCTION_NAME, none]),
+    ?MODULE ! {request, self(), stop},
     receive 
 	    {reply, Reply} -> Reply
     end.
