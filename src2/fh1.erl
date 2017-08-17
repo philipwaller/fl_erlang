@@ -83,10 +83,10 @@ deallocate({Free, Allocated}, Freq) ->
 
 exited({Free, Allocated}, Pid) ->                %%% FUNCTION ADDED
     case lists:keysearch(Pid,2,Allocated) of
-      {value,{Freq,Pid}} ->
+    {value,{Freq,Pid}} ->
         NewAllocated = lists:keydelete(Freq,1,Allocated),
-        {[Freq|Free],NewAllocated}; 
-      false ->
+        exited({[Freq|Free],NewAllocated}, Pid); 
+    false ->
         {Free,Allocated} 
     end.
 
