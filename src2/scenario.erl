@@ -1,25 +1,25 @@
 -module(scenario).
--export([setup/0,client/2,random_elem/1]).
+-export([
+        start/0,client/2,random_elem/1,
+        stop/0
+    ]).
 
 % Use this module to exercise the behaviour of the 
 % hardened frequency server.
 
 % Calling setup will launch the server and two clients: alice and bob.
 
-setup() -> [
+start() -> [
         fh1:start(),
-        spawn(?MODULE,init,[alice]),
-        spawn(?MODULE,init,[bob])
+        spawn(?MODULE,loop,[alice,[]]),
+        spawn(?MODULE,loop,[bob,[]])
     ].
 
-init(Id) ->
-    client(Id, []).
-
-shutdown() ->
-    %deallocate_all(),
-    %stop_client(),
-    %stop_server(),
-    ok.
+stop() ->
+    ?MODULE ! {request, self(), stop},
+    receive
+        {reply, Reply} -> Reply
+    end.
 
 deallocate([]) -> ok;
 deallocate([F|Fs]) ->
@@ -65,17 +65,18 @@ client(Id,Freqs) ->
             end
     end.
 
-shutdown(Id,[]) ->
+shutdown(_Id,[]) ->
     ok;
 shutdown(Id,[F|Fs]) ->
-    fh1:deallocate(F),
+    deallocate(F),
     shutdown(Id,Fs).
 
 
 loop(Id,Freqs) ->
     receive
-    stop ->
-            shutdown(Id,Freqs)
+    {request,Pid,stop} ->
+        shutdown(Id,Freqs), 
+        Pid ! {reply, stopped}
 
     after 0 -> 
             client(Id,Freqs)
