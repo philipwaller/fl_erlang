@@ -10,7 +10,7 @@
 -export([init/2]).
 
 
-init(Id,Frequencies) -> loop(Id,Frequencies).
+init(Id,Frequencies) -> loop(Id,{Frequencies,[]}).
 
 loop(Id,Frequencies) ->
 	receive
