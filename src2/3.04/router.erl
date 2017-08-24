@@ -39,8 +39,8 @@ loop(Wrks) ->
 	io:format("loop(~w)~n",[Wrks]),
 	receive
 		{request,_Pid,allocate} = Request ->
-                        {Wrk,_Fs} = load_bal(Wrks),
-                        Wrk ! Request,
+                        {Nid,_Wid,_Fs} = load_bal(Wrks),
+                        Nid ! Request,
 			?MODULE:loop(Wrks);
 
 		{request,_Pid,{deallocate,_F}} = Request -> 
