@@ -26,9 +26,10 @@ frequency_config() -> [
 workers(Cfg) -> 
 	[?MODULE:worker(Name,Fs) || {Name,Fs} <- Cfg].
 
-worker(Name,Fs) ->
-	Wrk = spawn_link(frequency,init,[Name,Fs]),
-	{Wrk,Fs}.
+worker(Nid,Fs) ->
+	Pid = spawn_link(frequency,init,[Nid,Fs]),
+        register(Nid,Pid),
+	{Nid,Pid,Fs}.
 
 %%------------------------------------------------------------------------------
 %%
@@ -47,12 +48,12 @@ loop(Wrks) ->
                         ?MODULE:loop(Wrks);
 
 		{request,Pid,stop} ->
-			[exit(Wrk,kill) || {Wrk,_Fs} <- Wrks],
+			[exit(Wid,kill) || {_Nid,Wid,_Fs} <- Wrks],
 			Pid ! {reply,stopped};
 
 		{'EXIT',_Pid,_Reason} = Request ->
-			process_exit(Wrks,Request),
-			?MODULE:loop(Wrks);
+			NewWrks = process_exit(Wrks,Request),
+			?MODULE:loop(NewWrks);
 
 		_ ->
 			?MODULE:loop(Wrks)
@@ -60,20 +61,16 @@ loop(Wrks) ->
 
 process_deallocation(Wrks,{request,Pid,{deallocate,F}}=Request) ->
         try frequency_worker(F,Wrks) of
-                {Wrk,_Fs} -> frequency_worker(F,Wrks),
-                Wrk ! Request
+                {Nid,_Pid,_Fs} -> Nid ! Request
         catch
                 _:_ -> Pid ! {reply,{illegal_deallocation_request,F}}
         end.
 
-process_exit(Wrks,{'EXIT',Pid,Reason}) ->
-        W = hd([ {Wrk,Fs} || {Wrk,Fs} <- Wrks, Wrk=:=Pid ]),
-	%respawn name
-	io:format("~w~n",[W]).
-
-
-
-
+process_exit(Wrks,{'EXIT',Pid,_Reason}) ->
+        case lists:keytake(Pid,2,Wrks) of
+                {value,{Nid,_Wid,Fs},NewWrks} -> [worker(Nid,Fs)|NewWrks];
+                _ -> Wrks
+        end.
 
 % Random load balancing
 load_bal(Wrks) ->
@@ -81,7 +78,7 @@ load_bal(Wrks) ->
 
 % Frequency Worker
 frequency_worker(F,Wrks) ->
-        hd([{Wrk,Fs} || {Wrk,Fs} <- Wrks, lists:member(F,Fs)]).
+        hd([{Nid,Pid,Fs} || {Nid,Pid,Fs} <- Wrks, lists:member(F,Fs)]).
 
 %%------------------------------------------------------------------------------
 %% 	. Functional Interface .
