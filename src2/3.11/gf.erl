@@ -19,7 +19,7 @@
 -export([handle_info/2, terminate/2, code_change/3]).
 
 % you will need to implement these.
--export([allocate/0,deallocate/1,stop/0]).
+-export([allocate/0,report/0,inject/1,deallocate/1,stop/0]).
 
 %% These are the start functions used to create and
 %% initialize the server.
@@ -36,25 +36,76 @@ init([]) ->
 % Hard Coded
 get_frequencies() -> [10,11,12,13,14,15].
 
+
+%%
 %% Functional interface
+%%
 
 allocate() -> 
-    'for you to do'.
+    gen_server:call(?MODULE,allocate).
+
+report() ->
+    gen_server:call(?MODULE,report).
+
+inject(Fs) ->
+    gen_server:call(?MODULE,{inject,Fs}).
 
 deallocate(Freq) -> 
-    'for you to do'.
+    gen_server:call(?MODULE,{deallocate,Freq}).
+    %gen_server:cast(?MODULE,{deallocate,Freq}).
 
 stop() ->  
-    'for you to do'.  
+    gen_server:stop(?MODULE).
+    %gen_server:call(?MODULE,stop).
+    %gen_server:cast(?MODULE,stop).
 
-handle_call(message, From, State) ->
-    'for you to do'.
 
-handle_cast(message, State) ->
-  'for you to do';  
-  
+%
+% 'call' is required when:
+%   - the 'From' pid is required
+%   - feedback is necessary
+%
+
+handle_call(allocate, From, State) ->
+    {NewFrequencies, Reply} = allocate(State, From),
+    {reply,Reply,NewFrequencies};
+
+handle_call(report, _From, {Free, _}=State) ->
+    {reply,{length(Free),Free},State};
+
+handle_call({inject,NFs}, _From, {Free,Alloc}=State) ->
+    Allocated = [F||{F,_} <- Alloc],
+    OFs = lists:usort(lists:append(Free,Allocated)),
+    NewOFs = lists:usort(NFs),
+    case ordsets:is_disjoint(OFs,NewOFs) of
+        true -> 
+            Fs = ordsets:union(OFs,NewOFs),
+            {reply,{ok,length(Fs),Fs},{lists:append(Free,NewOFs),Alloc}};
+        _    ->
+            {reply,{dups,ordsets:intersection(OFs,NewOFs)},State}
+    end;
+
+% 'cast' is a better option.
+handle_call({deallocate,Freq}, _From, State) ->
+    NewFrequencies = deallocate(State, Freq),
+    {reply,ok,NewFrequencies};
+
+% 'gen_server:stop' is a better option.
+handle_call(stop,_From,State) ->
+    {stop,stopped,ok,State}.
+
+%
+%
+%
+%
+
+handle_cast({deallocate,Freq}, State) ->
+    NewFrequencies = deallocate(State, Freq),
+    {noreply,NewFrequencies};
+
+% 'gen_server:stop' is a better option.
 handle_cast(stop, State) ->
-  'for you to do'.    
+    {stop,stopped,State}.
   
 
 %% The Internal Help Functions used to allocate and
