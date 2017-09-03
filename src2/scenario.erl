@@ -139,8 +139,19 @@ deallocate_all(Id,[F|Fs]) ->
 shutdown(Id,Freqs) ->
     %% @todo: finish processing and close cleanly; modelled with sleep.
     timer:sleep(10000),
+    clear(),
     io:format("~w:~w:Client STOPPED!~n",[Id,Freqs]),
     ok.
+
+clear() ->
+	io:format("clear()~n",[]),
+	receive
+		Msg -> 
+			io:format("CLEAR: ~w~n",[Msg]),
+			clear()
+	after 0 ->
+		ok
+	end.
     
 
 %%------------------------------------------------------------------------------
